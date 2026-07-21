@@ -6,7 +6,7 @@
 local Utils: {[string]: any}
 local Clock = os.clock
 local TRem, TClone, TUpk = table.remove, table.clone, table.unpack
-local TClr, TPck = table.clear, table.pack
+local TClr, TPck, TIns = table.clear, table.pack, table.insert
 local COActive, COYield = coroutine.running, coroutine.yield
 local TKDefer, TKDly, TKSpn = task.defer, task.delay, task.spawn
 
@@ -30,7 +30,7 @@ export type Signal = {
 	Dispatch: (self: Signal, ...any) -> ();
 	Connect: (self: Signal, Fn: Fn, Scope: Scope?) -> Connection;
 	Wait: (self: Signal, Timeout: number?) -> (boolean, ...any);
-	Wrap: (self: Signal, Native: RBXScriptSignal) -> Signal;
+	Wrap: (Native: RBXScriptSignal) -> Signal;
 	GetConnections: (self: Signal) -> number;
 	Destroy: (self: Signal) -> ();
 	Bridge: RBXScriptConnection | nil
@@ -97,6 +97,9 @@ function Signal.Once(self: Signal, Func: Fn, Scope: Scope?): Connection
 	Merge.Once = true
 	return self:Connect(Func, Merge)
 end
+function Signal.Pipe(self: Signal, Target: Signal): Connection
+	return self:Connect(function(...) Target:Fire(...) end)
+end
 function Signal.Dispatch(self: Signal, ...: any): ()
 	local Listeners = self.Listeners
 	local Count = #Listeners
@@ -117,6 +120,13 @@ function Signal.Dispatch(self: Signal, ...: any): ()
 			TKSpn(error, `Signal Listener: {Res}`, 0)
 		end
 	end
+end
+function Signal.Clone(self: Signal): Signal
+	local Sig = Signal.New(self.Deferred)
+	for _, Connection in self.Listeners do
+		Sig:Connect(Connection.Func, {Priority = Connection.Priority, Once = Connection.Once})
+	end
+	return Sig
 end
 function Signal.Fire(self: Signal, ...: any): ()
 	assert(not self.Destroyed, "Signal is not implemented or is destroyed")
@@ -148,16 +158,16 @@ function Signal.Wait(self: Signal, Timeout: number?): (boolean, ...any)
 		if Settled then return end
 		Settled = true
 		Cleanup()
-		TKSpn(Thread, true, ...)
+		TKSpn(MThread, true, ...)
 	end, {Once = true, Priority = 1})
-	TIns(self.Queue, Thread)
+	TIns(self.Queue, MThread)
 	if Timeout then
 		TKDly(Timeout, function()
 			if Settled then return end
 			Settled = true
 			Cleanup()
 			if Conn then Conn:Disconnect() end
-			TKSpn(Thread, false)
+			TKSpn(MThread, false)
 		end)
 	end
 	return COYield()
@@ -177,10 +187,10 @@ function Signal.Destroy(self: Signal): ()
 		self.Bridge = nil
 	end
 	self:DisconnectAll()
-	for _, Thread in self.Queue do
+	for _, Thread: thread in self.Queue do
 		TKSpn(Thread, false)
 	end
-	TClr(self.Waiting)
+	TClr(self.Queue)
 end
 
 return Signal
