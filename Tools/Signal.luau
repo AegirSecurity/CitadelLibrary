@@ -41,8 +41,8 @@ Signal.__index = Signal
 local Connection = {}
 Connection.__index = Connection
 
-function Signal.Init(Scope)
-	Utils = Scope.Utils
+function Signal.Init(Utilities)
+	Utils = Utilities
 end
 
 local function Create(Owner: any, Fn: Fn, Once: boolean, Priority: number): Connection
@@ -118,7 +118,7 @@ function Signal.Wait(self: Signal, Timeout: number?): (boolean, ...any)
 		if Settled then return end
 		Settled = true
 		TKSpn(Thread, true, ...)
-	end, {Once = true, Priority = 999})
+	end, {Once = true, Priority = 1})
 	if Timeout then
 		TKDly(Timeout, function()
 			if Settled then return end
