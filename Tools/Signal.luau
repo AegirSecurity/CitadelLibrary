@@ -36,7 +36,7 @@ export type Signal = {
 	Bridge: RBXScriptConnection | nil
 }
 
-local Signal = {}
+local Signal = {Version = "0.1.26:P"}
 Signal.__index = Signal
 local Connection = {}
 Connection.__index = Connection

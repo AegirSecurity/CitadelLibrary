@@ -3,7 +3,7 @@
 --!native
 --/ Citadel/Utils.luau (Client) (a. HeartOfIrons)
 --/ Utilities and general-purpose tools
-local Utils = {}
+local Utils = {Version = "0.1.26:P"}
 local Servos = {
 	TweenService = game:GetService("TweenService");
 	TextService = game:GetService("TextService");
