@@ -43,6 +43,7 @@ Connection.__index = Connection
 
 function Signal.Init(Utilities)
 	Utils = Utilities
+	Signal.Init = nil
 end
 
 local function Create(Owner: any, Fn: Fn, Once: boolean, Priority: number): Connection
