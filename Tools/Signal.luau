@@ -63,7 +63,7 @@ function Connection.Disconnect(self: Connection): ()
 end
 function Connection.Reconnect(self: Connection): ()
 	if self.Connected then return end
-	assert(not self.Signal.Destroyed, "Owned Signal has been destroyed")
+	if self.Signal.Destroyed then return end
 	self.Connected = true
 	Utils.BinInsert(self.Signal.Listeners, self, "Priority")
 end
@@ -163,6 +163,12 @@ function Signal.Wait(self: Signal, Timeout: number?): (boolean, ...any)
 	return COYield()
 end
 function Signal.GetConnections(self: Signal): number return #self.Listeners end
+function Signal.DisconnectAll(self: Signal): ()
+	for _, Connection in self.Listeners do
+		Connection.Connected = false
+	end
+	TClr(self.Listeners)
+end
 function Signal.Destroy(self: Signal): ()
 	if self.Destroyed then return end
 	self.Destroyed = true
