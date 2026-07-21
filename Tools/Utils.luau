@@ -199,14 +199,25 @@ function Utils.Enqueue(List: {any}, Queue: {any}): ()
 	for _, Item in List do TIns(Queue, Item) end
 end
 
-function Utils.BinInsert(List: {any}, Item: any, Key: string): {any}
+function Utils.BinInsert(List: {any}, Item: any, Key: string, Descending: boolean?): {any}
 	local Low, High = 1, #List
-	while Low <= High do
-		local Mid = MFlr((Low + High) / 2)
-		if List[Mid][Key] <= Item[Key] then
-			Low = Mid + 1
-		else
-			High = Mid - 1
+	if Descending then
+		while Low <= High do
+			local Mid = MFlr((Low + High) / 2)
+			if List[Mid][Key] >= Item[Key] then
+				Low = Mid + 1
+			else
+				High = Mid - 1
+			end
+		end
+	else
+		while Low <= High do
+			local Mid = MFlr((Low + High) / 2)
+			if List[Mid][Key] <= Item[Key] then
+				Low = Mid + 1
+			else
+				High = Mid - 1
+			end
 		end
 	end
 	TIns(List, Low, Item)
