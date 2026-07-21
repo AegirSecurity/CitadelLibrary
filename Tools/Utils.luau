@@ -7,6 +7,7 @@ local Utils = {Version = "0.1.26:P"}
 local Servos = {
 	TweenService = game:GetService("TweenService");
 	TextService = game:GetService("TextService");
+	HTTPService = game:GetService("HttpService");
 	RunService = game:GetService("RunService");
 	Lighting = game:GetService("Lighting")
 }
@@ -16,6 +17,7 @@ local TINew = TweenInfo.new
 local INew = Instance.new
 local V3New = Vector3.new
 local TIns, TCat, TFrz = table.insert, table.concat, table.freeze
+local TClr = table.clear
 local MFlr, MClp, MRnd, MRand = math.floor, math.clamp, math.round, math.random
 local MExp, MAbs = math.exp, math.abs
 local TKDly, TKSpn = task.delay, task.spawn
@@ -26,6 +28,19 @@ local Clock = os.clock
 local Heart = Servos.RunService.Heartbeat
 
 local TBParams = INew("GetTextBoundsParams")
+local HTObj: DataModel | HttpService?, HTMethod: ((self: any, Url: string) -> any)? = nil, nil
+
+--/ Initialisation
+--/ Check if this current environment has HttpGet (usually exploit envs)
+local OK, HttpGet = pcall(function() return game.HttpGet end)
+if OK then
+	HTObj, HTMethod = game, HttpGet
+elseif not OK and Servos.HTTPService.HttpEnabled then
+	HTObj = Servos.HTTPService
+	HTMethod = HTObj.GetAsync
+else
+	warn(`Utils could not find a proper HTTPService Provider. Internet functions will not work.`)
+end
 
 --/ Shortcuts
 
@@ -170,6 +185,7 @@ function Utils.FisherShuffle(Table: {any}): {any}
 	return Table
 end
 
+--/ Deep-copy a table to a new one
 function Utils.Copy(Table: {any}): {any}
 	assert(typeof(Table) == "table")
 	local Result = {}
@@ -226,21 +242,33 @@ end
 
 --/ Lighting
 
+--/ Checks if the current Environment's lighting is qualified as night-time
 function Utils.IsNight(): boolean
 	return Servos.Lighting.ClockTime >= 18 or Servos.Lighting.ClockTime <= 6
 end
+--/ Checks if the current Environment's lighting is qualified as daytime
 function Utils.IsDay(): boolean
 	return Servos.Lighting.ClockTime <= 18 and Servos.Lighting.ClockTime >= 6
 end
 
+--/ Internet
+
+--/ Fetch contents from a url over the internet (Requires HTTPService or equivalent)
+function Utils.Fetch(Url: string, ...: any): (boolean, string | any)
+	if not (HTObj and HTMethod) then return false, "HTTPService Provider did not load properly" end
+	return pcall(HTMethod, HTObj, Url, ...)
+end
+
 --/ Connections
 
-function Utils.DisconnectAll(List: {RBXScriptConnection}): ()
-	for _, Connection in List do
+--/ Disconnect all provided Roblox connections
+function Utils.DisconnectAll(List: {RBXScriptConnection}): {any}
+	for _, Connection: RBXScriptConnection in List do
 		if not (Connection and typeof(Connection) == "RBXScriptConnection") then continue end
 		Connection:Disconnect()
 	end
-	table.clear(List)
+	TClr(List)
+	return List
 end
 
 --/ Modules
